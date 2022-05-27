@@ -1,0 +1,70 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug pound_fs_test::test_make_fs",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--package=pound_fs",
+                    "--bin=pound_fs",
+                    "--",
+                    "pound_fs_test::test_make_fs",
+                    "--exact",
+                ],
+                "filter": {
+                    "name": "pound_fs",
+                    "kind": "bin"
+                }
+            },
+            "env": {
+                "RUST_BACKTRACE": "1"
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'pound_fs'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=pound_fs",
+                    "--package=pound_fs"
+                ],
+                "filter": {
+                    "name": "pound_fs",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'pound_fs'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=pound_fs",
+                    "--package=pound_fs"
+                ],
+                "filter": {
+                    "name": "pound_fs",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

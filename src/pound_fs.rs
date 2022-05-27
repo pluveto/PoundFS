@@ -1,0 +1,79 @@
+use crate::{block_dev::BlockDevice, mstruct::SuperBlock, util::{human_readable_size, hex_str}};
+
+pub struct MkfsOption {
+    pub size: usize,    // 总大小，单位为字节
+    pub blocksize: u32, // 逻辑块大小 通常是4096字节（4KB）
+    pub agblocks: u32,  // 每个 AG 的逻辑块数
+}
+
+// xfs_mount
+pub struct MountPoint<'a> {
+    pub dev: Box<dyn BlockDevice + 'a>,
+    superblock: SuperBlock,
+}
+
+impl<'a> MountPoint<'a> {
+    pub fn new(dev: Box<dyn BlockDevice + 'a>, superblock: SuperBlock) -> Self {
+        MountPoint { dev, superblock }
+    }
+}
+
+pub fn make_fs(dev: Box<dyn BlockDevice>, opt: MkfsOption) {
+    // init MountPoint
+    let mut mp = Box::new(MountPoint::new(
+        dev,
+        SuperBlock::new(),
+    ));
+    mp.superblock.blocksize = opt.blocksize;
+    // 将设备划分为多个 AG
+    // - 每个 AG 的字节大小
+    let ag_size = opt.blocksize * opt.agblocks;
+    // - 总 AG 数
+    let ag_count = (opt.size as f64 / ag_size as f64).ceil() as usize;
+    // - 最后一个 AG 的实际大小
+    let last_ag_size = (opt.size as u32) % (ag_size as u32);
+    println!(
+        "size={}, (each)ag_size={}, (total)ag_count={}, last_ag_size={}\n",
+        human_readable_size(opt.size),
+        human_readable_size(ag_size as usize),
+        ag_count,
+        human_readable_size(last_ag_size as usize)
+    );
+
+    for ag_id in 0..(ag_count) {
+        let cur_ag_size = if (ag_id + 1) == ag_count {
+            last_ag_size
+        } else {
+            ag_size
+        };
+        init_ag(
+            &mp,
+            &InitAgOption {
+                ag_size: cur_ag_size,
+                start_block: ag_id * opt.agblocks as usize,
+                ag_id: ag_id as u32,
+            },
+        );
+    }
+}
+
+pub struct InitAgOption {
+    pub ag_id: u32,
+    pub ag_size: u32,
+    pub start_block: usize, // 起始物理块
+}
+// xfs_ag_init_headers
+pub fn init_ag(mp: &Box<MountPoint>, opt: &InitAgOption) {
+    println!(
+        "init_ag: ag_id={}, ag_size={}, start_block={}",
+        opt.ag_id,        
+        human_readable_size(opt.ag_size as usize),
+        opt.start_block
+    );    
+    println!("will init ag at block {}", opt.start_block);
+    let sb_encoded = bincode::serialize(&mp.superblock).unwrap();
+    let ag_off = opt.start_block * mp.superblock.blocksize as usize;
+    println!("write superblock to addr {}", hex_str(ag_off));
+    mp.dev.as_ref().write_all_at(ag_off, sb_encoded.as_slice());
+
+}
