@@ -7,10 +7,9 @@ pub fn pad_zeroes<const A: usize, const B: usize>(arr: [u8; A]) -> [u8; B] {
     b
 }
 
-pub fn hex_str(number: usize) -> String {    
+pub fn hex_str(number: usize) -> String {
     // format to hex, space per 8 char
     format!("{:08x}H", number)
-    
 }
 
 pub fn human_readable_size(size: usize) -> String {
@@ -66,4 +65,11 @@ pub fn uuid() -> [u8; 16] {
     let mut uuid = [0; 16];
     rng.fill_bytes(&mut uuid);
     uuid
+}
+
+pub fn load_from_bytes<T>(bytes: &[u8]) -> Option<T>
+where
+    T: for<'de> serde::Deserialize<'de>,
+{    
+    Some(bincode::deserialize(bytes).ok()?)
 }
