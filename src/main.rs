@@ -13,7 +13,10 @@ mod file_blk_test;
 mod pound_fs;
 mod pound_fs_test;
 mod util;
+mod dstruct;
 mod mstruct;
+mod btree;
+mod btree_test;
 
 const TTL: Duration = Duration::from_secs(1); // 1 second
 

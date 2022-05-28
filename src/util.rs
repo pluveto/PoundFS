@@ -1,3 +1,5 @@
+use rand::RngCore;
+
 pub fn pad_zeroes<const A: usize, const B: usize>(arr: [u8; A]) -> [u8; B] {
     assert!(B >= A); //just for a nicer error message, adding #[track_caller] to the function may also be desirable
     let mut b = [0; B];
@@ -47,4 +49,21 @@ pub fn human_readable_size(size: usize) -> String {
         unit = "YB";
     }
     format!("{} {}", size, unit)
+}
+
+pub fn ffs(number: u32) -> u8 {
+    let mut number = number;
+    let mut i = 0;
+    while number != 0 {
+        number >>= 1;
+        i += 1;
+    }
+    i
+}
+
+pub fn uuid() -> [u8; 16] {
+    let mut rng = rand::thread_rng();
+    let mut uuid = [0; 16];
+    rng.fill_bytes(&mut uuid);
+    uuid
 }

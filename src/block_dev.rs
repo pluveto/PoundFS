@@ -1,5 +1,5 @@
 use crate::util::hex_str;
-
+// include\linux\blk_types.h
 pub trait BlockDevice: Send + Sync {
     fn read_block(&self, block_id: usize, buf: &mut [u8]) -> bool;
     fn write_block(&self, block_id: usize, buf: &[u8]) -> bool;

@@ -1,49 +1,98 @@
-pub type Inode = u64;
+pub type AbsInoNo = u64;
 pub type UUID = [u8; 16];
-// 超级块占用一个扇区的大小。存储结构如下：
-pub struct SuperBlock {
-    pub magicnum: u32,  // 魔数
-    pub blocksize: u32, // 逻辑块大小 通常是4096字节（4KB）
-    pub dblocks: u32,   // 数据块数
-    pub rblocks: u32,   // 实时块数 https://www.cnblogs.com/orange-CC/p/12711078.html
-    pub rextents: u32,  // 实时扩展数
-    pub uuid: UUID,     // 唯一标识符
-    logstart: u32,      // 日志起始块号
-    rootino: u32,       // 根目录Inode号
-    rbmino: u32,        // 实时块位图Inode号
-    rextsize: u32,      // 实时扩展块大小
-    agblocks: u32,      // 块组大小 最后一个AG的实际大小可能会不一样
-    agcount: u32,       // 块组数
-    rbmblocks: u32,     // 实时块位图块数
-    logblocks: u32,     // 日志块数
-    version: u16,       // 版本号
-    sectsize: u16,      // 扇区大小 bytes
-    inodesize: u16,     // Inode大小 bytes
-    inopblock: u16,     // Inode per block
-    fsname: [u8; 16],   // 文件系统名称
-    blocksize_bits: u8, // 块大小位数，即以2为底的对数
-    sectsize_bits: u8,  // 扇区大小位数，即以2为底的对数
-    inodesize_bits: u8, // Inode大小位数，即以2为底的对数
-    inpblock_bits: u8,  // Inode per block位数，即以2为底的对数
-    agblocks_bits: u8,  // 块组大小位数，即以2为底的对数
-    rextents_bits: u8,  // 实时扩展块大小位数，即以2为底的对数
-    inprogress: u8,     // 是否正在进行格式化
-    imax_pct: u8,       // 最大Inode百分比
-    icount: u64,        // Inode总数
-    ifree: u64,         // 空闲Inode总数
-    fdblocks: u64,      // 空闲数据块总数
-    frextents: u64,     // 空闲实时扩展总数
 
-    uquotino: Inode,    // 用户配额Inode号
-    gquotino: Inode,    // 组配额Inode号
-    qflags: u32,        // 配额标志
-    flags: u32,         // 混合标志
-    sb_inoalignmt: u32, // Inode对齐值 Inode chunk alignment, fsblocks
+
+use serde::{Serialize, Deserialize};
+
+use crate::util::uuid;
+
+const SuperBlockMagicNum: u32 = 0x73666470;
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SuperBlock {
+    pub magicnum: u32,      // 魔数
+    pub blocksize: u32,     // 逻辑块大小 通常是4096字节（4KB）
+    pub dblocks: u32,       // 数据块数
+    pub rblocks: u32,       // 实时块数 https://www.cnblogs.com/orange-CC/p/12711078.html
+    pub rextents: u32,      // 实时扩展数
+    pub uuid: UUID,         // 唯一标识符
+    pub rootino: u32,       // 根目录Inode号
+    pub rbmino: u32,        // 实时块位图Inode号
+    pub rextsize: u32,      // 实时扩展块大小
+    pub agblocks: u32,      // 块组大小 最后一个AG的实际大小可能会不一样
+    pub agcount: u32,       // 块组数
+    pub rbmblocks: u32,     // 实时块位图块数
+    pub logblocks: u32,     // 日志块数
+    version: u16,           // 版本号
+    pub sectsize: u16,      // 扇区大小 bytes
+    pub inodesize: u16,     // Inode大小 bytes
+    pub inopblock: u16,     // Inode per block
+    pub fsname: [u8; 16],   // 文件系统名称
+    pub blocksize_bits: u8, // 块大小位数，即以2为底的对数
+    pub sectsize_bits: u8,  // 扇区大小位数，即以2为底的对数
+    pub inodesize_bits: u8, // Inode大小位数，即以2为底的对数
+    pub inpblock_bits: u8,  // Inode per block位数，即以2为底的对数
+    pub agblocks_bits: u8,  // 块组大小位数，即以2为底的对数
+    pub rextents_bits: u8,  // 实时扩展块大小位数，即以2为底的对数
+    pub inprogress: u8,     // 是否正在进行格式化
+    pub imax_pct: u8,       // 最大Inode百分比
+    pub icount: u64,        // Inode总数
+    pub ifree: u64,         // 空闲Inode总数
+    pub fdblocks: u64,      // 空闲数据块总数
+    pub frextents: u64,     // 空闲实时扩展总数
+
+    pub uquotino: AbsInoNo, // 用户配额Inode号
+    pub gquotino: AbsInoNo, // 组配额Inode号
+    pub qflags: u32,        // 配额标志
+    pub flags: u32,         // 混合标志
+    pub sb_inoalignmt: u32, // Inode对齐值 Inode chunk alignment, fsblocks
+}
+
+impl SuperBlock {
+    pub fn new() -> Self {
+        SuperBlock {
+            magicnum: SuperBlockMagicNum,
+            blocksize: 0,
+            dblocks: 0,
+            rblocks: 0,
+            rextents: 0,
+            uuid: [0; 16],
+            rootino: 0,
+            rbmino: 0,
+            rextsize: 0,
+            agblocks: 0,
+            agcount: 0,
+            rbmblocks: 0,
+            logblocks: 0,
+            version: 0,
+            sectsize: 0,
+            inodesize: 0,
+            inopblock: 0,
+            fsname: [0; 16],
+            blocksize_bits: 0,
+            sectsize_bits: 0,
+            inodesize_bits: 0,
+            inpblock_bits: 0,
+            agblocks_bits: 0,
+            rextents_bits: 0,
+            inprogress: 0,
+            imax_pct: 0,
+            icount: 0,
+            ifree: 0,
+            fdblocks: 0,
+            frextents: 0,
+            uquotino: 0,
+            gquotino: 0,
+            qflags: 0,
+            flags: 0,
+            sb_inoalignmt: 0,
+        }
+    }
 }
 // AG第二个扇区包括两个空闲空间的B+树和AG空闲空间
 // XFS_BTNUM_AGF Btree number 0 is bno, 1 is cnt.  This value gives the size of the arrays below.
-const XFS_BTNUM_AGF: usize = 3;
-pub struct AGF {
+const AgfBtNum: usize = 3;
+const AgfMagicNum: u32 = 0x01231023;
+pub struct Agf {
     magicnum: u32,   // AG扇区的 Magic Number
     versionnum: u32, // 版本号
     seqno: u32,      // 扇区的 AG 序号，from 0
@@ -54,27 +103,56 @@ pub struct AGF {
      * cntroot  表示“以块数为索引的 FS B+tree 根节点”的块号
      * rmaproot 表示“表示对已用空间的倒排索引 B+tree 根节点”的块号
      */
-    roots: [u32; XFS_BTNUM_AGF], // 用来管理空间所需的几个结构的头地址
-    spare0: u32,     // 有意留空的字段
-    levels: [u32; XFS_BTNUM_AGF], // B+树的层级或深度，与agf_roots一一对应。对于新创建的AG，三个 level 都是 1
-    spare1: u32,                  // 占位
+    pub roots: [u32; AgfBtNum], // 用来管理空间所需的几个结构的头地址
+    pub spare0: u32,     // 有意留空的字段
+    pub levels: [u32; AgfBtNum], // B+树的层级或深度，与agf_roots一一对应。对于新创建的AG，三个 level 都是 1
+    pub spare1: u32,                  // 占位
 
-    flfirst: u32, // FL(空闲链表)块的开始位置
-    fllast: u32,  // FL 块的结束位置。
-    flcount: u32, // FL 中的块数量。
+    pub flfirst: u32, // FL(空闲链表)块的开始位置
+    pub fllast: u32,  // FL 块的结束位置。
+    pub flcount: u32, // FL 中的块数量。
 
-    freeblks: u32,  // AG 空闲块数量
-    longest: u32,   // 最长连续空闲块长度
-    btreeblks: u32, // AGF 的 B+Tree 使用掉的块数
-    uuid: UUID,     // 当前 AGF 的UUID
-    spare64: [u64; 16],
-    lsn: u64, // 最后写入 AGF 的日志 SN（序列号）
-    crc: u32, // AGF 的 CRC 校验值
+    pub freeblks: u32,  // AG 空闲块数量
+    pub longest: u32,   // 最长连续空闲块长度
+    pub btreeblks: u32, // AGF 的 B+Tree 使用掉的块数
+    pub uuid: UUID,     // 当前 AGF 的UUID
+    pub spare64: [u64; 16],
+    pub lsn: u64, // 最后写入 AGF 的日志 SN（序列号）
+    pub crc: u32, // AGF 的 CRC 校验值
 
-    spare2: u32, // 占位
+    pub spare2: u32, // 占位
 }
 
-pub struct AGFreeList {
+impl Agf {
+    // xfs_agfblock_init
+    // * `agno` - AG number from 0
+    // * `agblocks` - AG real size in blocks
+    pub fn new(agno: u32, agblocks: u32) -> Self {
+        Agf {
+            magicnum: AgfMagicNum,
+            versionnum: 0,
+            seqno: agno,
+            length: agblocks,
+            roots: [0; AgfBtNum],
+            spare0: 0,
+            levels: [0; AgfBtNum],
+            spare1: 0,
+            flfirst: 1,
+            fllast: 0,
+            flcount: 0,
+            freeblks: 0,
+            longest: 0,
+            btreeblks: 0,
+            uuid: uuid(),
+            spare64: [0; 16],
+            lsn: 0,
+            crc: 0,
+            spare2: 0,
+        }
+    }
+}
+
+pub struct Agfl {
     magicnum: u32, // AGFL 的 Magic Number
     seqno: u32,    // AGFL 的隶属 AG 序号，from 0
     uuid: UUID,    // AGFL 的UUID
@@ -83,51 +161,8 @@ pub struct AGFreeList {
                    // 剩余的整个扇区空间都是 AGFL 的有效部分
 }
 
-#[derive(Copy, Clone)]
-struct BtreeBlockShdr {
-    leftSibling: u32,  // 左兄弟节点的块号
-    rightSibling: u32, // 右兄弟节点的块号
 
-    blkno: u64, // 当前节点的块号。字节数/512 可得之
-    lsn: u64,   // 最后写入节点的日志 SN（序列号）
-    uuid: UUID, // 当前节点的UUID
-    owner: u32, // 当前节点的所有者（即哪个 ag）
-    crc: u32,   // 本块的 CRC 校验值
-}
-
-#[derive(Copy, Clone)]
-struct BtreeBlockLhdr {
-    /* long form block header */
-    leftSibling: u64,  // 左兄弟节点的块号
-    rightSibling: u64, // 右兄弟节点的块号
-
-    blkno: u64, // 当前节点的块号。字节数/512 可得之
-    lsn: u64,   // 最后写入节点的日志 SN（序列号）
-    uuid: UUID, // 当前节点的UUID
-    owner: u32, // 当前节点的所有者（即哪个 ag）
-    crc: u32,   // 本块的 CRC 校验值
-    pad: u32,   // 填充
-}
-
-union BtreeBlockUnion {
-    shdr: BtreeBlockShdr, // short format block header，shdr 用于 AG 内部寻址
-    lhdr: BtreeBlockLhdr, // long format block header，lhdr 用于跨 AG 寻址
-}
-pub struct BtreeBlock {
-    magicnum: u32, // B+树块的 Magic Number AB3B
-    level: u32, // B+树块的层级，如果level是0，表示当前的 block 存储的都是叶子节点，否则是索引节点。越靠近根部越大
-    numrecs: u32, // 如果是叶子节点，表示当前 B+树块中的记录数。否则表示有多少子节点（AllocRec）。
-    header: BtreeBlockUnion,
-}
-
-// AllocRec 是一个数对。
-// 用来表示空闲空间时，AllocRec 表示每个空闲块的起始块号和长度。
-pub struct AllocRec {
-    startblock: u32, // 当前记录的起始块号
-    blockcount: u32, // 当前记录的块数
-}
-
-pub struct AGI {
+pub struct Agi {
     magicnum: u32,   // AGInode 的 Magic Number = XAGI
     versionnum: u32, // AGInode 的版本号
     seqno: u32,      // 所属 AG 的序号，from 0
